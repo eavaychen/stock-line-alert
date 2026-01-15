@@ -11,8 +11,8 @@ def send_line(text: str):
         "Content-Type": "application/json",
     }
     url = "https://api.line.me/v2/bot/message/broadcast"
-    data = {"messages": [{"type": "text", "text": text}]}
-    r = requests.post(url, headers=headers, json=data, timeout=30)
+    payload = {"messages": [{"type": "text", "text": text}]}
+    r = requests.post(url, headers=headers, json=payload, timeout=30)
     print("LINE:", r.status_code, r.text)
     r.raise_for_status()
 
@@ -34,14 +34,23 @@ def main():
         raise RuntimeError("Missing LINE_OA_TOKEN (GitHub Secret)")
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    items = [x.strip() for x in WATCHLIST.split(",") if x.strip()]
 
-    # WATCHLIST 例：2330:650,2603:180,0050:160
-    for item in [x.strip() for x in WATCHLIST.split(",") if x.strip()]:
+    if not items:
+        print("WATCHLIST is empty. Example: 2330:650,2603:180,0050:160")
+        return
+
+    for item in items:
         code, target = item.split(":")
         symbol = f"{code}.TW"
         price = get_price(symbol)
 
         if price >= float(target):
-            send_line(f"📈 股價到價提醒\n{code}\n現價：{price}\n目標：>= {target}\n時間：{now}")
+            send_line(
+                f"📈 股價到價提醒\n{code}\n現價：{price}\n目標：>= {target}\n時間：{now}"
+            )
         else:
-            print("No trigger:", code, price,
+            print(f"No trigger: {code} price={price} target>={target}")
+
+if __name__ == "__main__":
+    main()
